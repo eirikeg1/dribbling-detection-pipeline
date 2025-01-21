@@ -6,6 +6,7 @@ import json
 import subprocess
 import datetime
 import glob
+import default_values
 
 def get_video_fps(video_path):
     """
@@ -94,6 +95,7 @@ def create_labels_json(video_name, frame_rate, total_frames, output_file):
     # Minimal placeholders for annotations or categories if needed
     annotations_list = []
     categories_list = []
+    # categories_list = default_values.categories
 
     data = {
         "info": info_block,
@@ -123,42 +125,47 @@ def main():
         if file_name.lower().endswith(('.mp4', '.webm')):
             base_name = os.path.splitext(file_name)[0]
             # Replace spaces with dashes
-            base_name_sanitized = base_name.replace(' ', '-')
+            base_name_sanitized = base_name.replace(' ', '-').lower()
 
             # Append current date/time for uniqueness
             timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             new_folder_name = f"{base_name_sanitized}-{timestamp}"
             new_folder_path = os.path.join(output_dir, new_folder_name)
+            train_dir = os.path.join(new_folder_path, 'train')
+            video_dir = os.path.join(train_dir, 'video1')
+            img_dir = os.path.join(video_dir, 'img1')
             
             os.makedirs(new_folder_path, exist_ok=True)
-
-            img1_folder = os.path.join(new_folder_path, 'img1')
-            os.makedirs(img1_folder, exist_ok=True)
+            os.makedirs(train_dir, exist_ok=True)
+            os.makedirs(img_dir, exist_ok=True)
 
             video_path = os.path.join(input_dir, file_name)
-            print(f"Processing video: {video_path}")
+            print(f"Processing video: {video_path}...")
 
             # 1) Get the actual FPS from the video
             fps = get_video_fps(video_path)
             print(f"  - Detected FPS: {fps}")
 
             # 2) Extract frames, scaling to 1920x1080
-            extract_frames(video_path, img1_folder)
-
+            extract_frames(video_path, img_dir)
+            print(f"\nFrames extracted to: {img_dir}")
+            
             # 3) Count how many frames we extracted
-            total_frames = get_frame_count(img1_folder)
+            total_frames = get_frame_count(img_dir)
             print(f"  - Total frames extracted: {total_frames}")
 
             # 4) Create Labels-GameState.json with the relevant info
-            json_path = os.path.join(new_folder_path, "Labels-GameState.json")
+            print(f"\nCreating Labels-GameState.json...")
+            json_path = os.path.join(video_dir, "Labels-GameState.json")
             create_labels_json(
                 video_name=base_name_sanitized,
                 frame_rate=fps,
                 total_frames=total_frames,
                 output_file=json_path
             )
+            print(f"  - {json_path} created.")
 
-    print("Processing completed.")
+    print("Processing completed.\n")
 
 
 if __name__ == "__main__":
