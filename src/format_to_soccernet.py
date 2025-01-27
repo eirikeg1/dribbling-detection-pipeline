@@ -158,14 +158,6 @@ def main():
             
             # 3) Count the frames
             total_frames = get_frame_count(img_dir)
-            
-            if verbose:
-                print(f"Processing video: {video_path}...")
-                print(f"  - Detected FPS: {fps}")
-                print(f"  - Frames extracted to: {img_dir}")
-                print(f"  - Total frames extracted: {total_frames}")
-                print(f"  - Moved video to: {processed_run_folder}\n")
-                print(f"  - {json_path} created.")
 
             # 4) Create Labels-GameState.json
             json_path = os.path.join(video_dir, "Labels-GameState.json")
@@ -176,6 +168,14 @@ def main():
                 output_file=json_path
             )
 
+            if verbose:
+                print(f"Processing video: {video_path}...")
+                print(f"  - Detected FPS: {fps}")
+                print(f"  - Frames extracted to: {img_dir}")
+                print(f"  - Total frames extracted: {total_frames}")
+                print(f"  - Moved video to: {processed_run_folder}\n")
+                print(f"  - {json_path} created.")
+                
             # 5) Move the original video to the processed folder for this run
             shutil.move(video_path, processed_run_folder)
 
