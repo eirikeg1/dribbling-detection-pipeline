@@ -5,7 +5,7 @@ import subprocess
 import datetime
 import glob
 import shutil
-import default_values  # Adjust or remove if not needed
+import default_values
 
 def get_video_fps(video_path):
     """
@@ -88,7 +88,7 @@ def create_labels_json(video_name, frame_rate, total_frames, output_file):
 
     annotations_list = []
     categories_list = []
-    # categories_list = default_values.categories  # Uncomment if you use default_values
+    # categories_list = default_values.categories
 
     data = {
         "info": info_block,
