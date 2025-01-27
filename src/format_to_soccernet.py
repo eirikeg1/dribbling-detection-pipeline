@@ -105,10 +105,12 @@ def main():
     parser = argparse.ArgumentParser(description="Format videos into a structured directory with frames + JSON.")
     parser.add_argument('-i', '--input_dir', type=str, default='./inputs', help='Input directory containing videos')
     parser.add_argument('-o', '--output_dir', type=str, default='./outputs', help='Output directory for structured data')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
     args = parser.parse_args()
     
     input_dir = args.input_dir
     output_dir = args.output_dir
+    verbose = args.verbose
 
     # Record start time
     start_time = time.time()
@@ -118,7 +120,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     # Create a unique run folder under the output directory
-    timestamp = start_dt.strftime("%Y-%m-%d-%H_%M_%S")
+    timestamp = start_dt.strftime("%Y-%m-%d_%H-%M-%S")
     run_folder = os.path.join(output_dir, f"run_{timestamp}")
     train_dir = os.path.join(run_folder, "train")
     os.makedirs(train_dir, exist_ok=True)
@@ -147,19 +149,22 @@ def main():
             base_name = os.path.splitext(file_name)[0]
             base_name_sanitized = base_name.replace(' ', '-').lower()
 
-            print(f"Processing video: {video_path}...")
 
             # 1) Get the actual FPS from the video
             fps = get_video_fps(video_path)
-            print(f"  - Detected FPS: {fps}")
 
             # 2) Extract frames (scaled to 1920x1080) into img1
             extract_frames(video_path, img_dir)
-            print(f"  - Frames extracted to: {img_dir}")
             
             # 3) Count the frames
             total_frames = get_frame_count(img_dir)
-            print(f"  - Total frames extracted: {total_frames}")
+            
+            if verbose:
+                print(f"Processing video: {video_path}...")
+                print(f"  - Detected FPS: {fps}")
+                print(f"  - Frames extracted to: {img_dir}")
+                print(f"  - Total frames extracted: {total_frames}")
+                print(f"  - Moved video to: {processed_run_folder}\n")
 
             # 4) Create Labels-GameState.json
             json_path = os.path.join(video_dir, "Labels-GameState.json")
@@ -173,7 +178,6 @@ def main():
 
             # 5) Move the original video to the processed folder for this run
             shutil.move(video_path, processed_run_folder)
-            print(f"  - Moved video to: {processed_run_folder}\n")
 
             # Collect details for this video
             video_details.append({
