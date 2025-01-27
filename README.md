@@ -9,7 +9,8 @@
 
 ## Run:
 
-Some configurations can be changed in `config.env`. The config
+Some configurations can be changed in `config.env`. You can use custom config files, which can be
+changed with the `-c` flag.
 
 ```bash
 ./src/run_pipeline.sh -i <input-video> [optional-args]
