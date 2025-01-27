@@ -5,6 +5,7 @@ import subprocess
 import datetime
 import glob
 import shutil
+import time
 import default_values
 
 def get_video_fps(video_path):
@@ -109,11 +110,15 @@ def main():
     input_dir = args.input_dir
     output_dir = args.output_dir
 
+    # Record start time
+    start_time = time.time()
+    start_dt = datetime.datetime.now()
+
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
     # Create a unique run folder under the output directory
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H_%M%-S")
+    timestamp = start_dt.strftime("%Y-%m-%d-%H_%M_%S")
     run_folder = os.path.join(output_dir, f"run_{timestamp}")
     train_dir = os.path.join(run_folder, "train")
     os.makedirs(train_dir, exist_ok=True)
@@ -122,8 +127,11 @@ def main():
     processed_run_folder = os.path.join("processed", f"run_{timestamp}")
     os.makedirs(processed_run_folder, exist_ok=True)
 
+    # For collecting summary info about the run
+    video_details = []
+
     video_counter = 1
-    
+
     # Loop through all mp4/webm files in input_dir
     for file_name in os.listdir(input_dir):
         if file_name.lower().endswith(('.mp4', '.webm')):
@@ -135,9 +143,6 @@ def main():
             os.makedirs(video_dir, exist_ok=True)
             os.makedirs(img_dir, exist_ok=True)
 
-            video_counter += 1
-
-            # Prepare for processing
             video_path = os.path.join(input_dir, file_name)
             base_name = os.path.splitext(file_name)[0]
             base_name_sanitized = base_name.replace(' ', '-').lower()
@@ -156,7 +161,7 @@ def main():
             total_frames = get_frame_count(img_dir)
             print(f"  - Total frames extracted: {total_frames}")
 
-            # 4) Create Labels-GameState.json in the same video folder
+            # 4) Create Labels-GameState.json
             json_path = os.path.join(video_dir, "Labels-GameState.json")
             create_labels_json(
                 video_name=base_name_sanitized,
@@ -170,7 +175,37 @@ def main():
             shutil.move(video_path, processed_run_folder)
             print(f"  - Moved video to: {processed_run_folder}\n")
 
-    print("All videos have been processed and moved.\n")
+            # Collect details for this video
+            video_details.append({
+                "original_file_name": file_name,
+                "video_name": base_name_sanitized,
+                "fps": fps,
+                "frames_extracted": total_frames
+            })
+
+            video_counter += 1
+
+    # Record end time and compute duration
+    end_time = time.time()
+    end_dt = datetime.datetime.now()
+    duration = end_time - start_time
+
+    # Create the run info data
+    data_info = {
+        "start_time": start_dt.isoformat(),
+        "end_time": end_dt.isoformat(),
+        "duration_seconds": round(duration, 2),
+        "videos_processed": len(video_details),
+        "details": video_details
+    }
+
+    # Write the data info file in the run folder
+    data_info_path = os.path.join(run_folder, "data_info.json")
+    with open(data_info_path, 'w', encoding='utf-8') as f:
+        json.dump(data_info, f, indent=4)
+
+    print("All videos have been processed and moved.")
+    print(f"Run information written to {data_info_path}\n")
 
 if __name__ == "__main__":
     main()
