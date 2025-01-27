@@ -50,12 +50,12 @@ fi
 
 # Step 1: Split the video
 echo "Step 1: Splitting the video..."
-bash src/split_video_script.sh -i "$input_video" -o "$OUTPUT_DIR"
+bash src/split_video_script.sh -i "$input_video" -o "$SPLIT_OUTPUT_DIR"
 echo "Video splitting completed."
 
 # Step 2: Restructure data to SoccerNet format
 echo "Step 2: Restructuring data to SoccerNet format..."
-python3 src/format_to_soccernet.py -i "$OUTPUT_DIR" -o "$OUTPUT_DIR"
+python3 src/format_to_soccernet.py -i "$SPLIT_OUTPUT_DIR" -o "$OUTPUT_DIR"
 echo "Data restructuring completed."
 
 echo "Pipeline completed successfully!"
