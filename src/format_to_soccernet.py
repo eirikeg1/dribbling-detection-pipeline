@@ -165,6 +165,7 @@ def main():
                 print(f"  - Frames extracted to: {img_dir}")
                 print(f"  - Total frames extracted: {total_frames}")
                 print(f"  - Moved video to: {processed_run_folder}\n")
+                print(f"  - {json_path} created.")
 
             # 4) Create Labels-GameState.json
             json_path = os.path.join(video_dir, "Labels-GameState.json")
@@ -174,7 +175,6 @@ def main():
                 total_frames=total_frames,
                 output_file=json_path
             )
-            print(f"  - {json_path} created.")
 
             # 5) Move the original video to the processed folder for this run
             shutil.move(video_path, processed_run_folder)
