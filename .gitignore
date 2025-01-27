@@ -5,3 +5,6 @@ processed
 
 # Compiled files
 *.pyc
+
+# Dependencies
+dependencies/*

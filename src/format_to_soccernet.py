@@ -198,7 +198,7 @@ def main():
     data_info = {
         "start_time": start_dt.isoformat(),
         "end_time": end_dt.isoformat(),
-        "duration_seconds": round(duration, 2),
+        "reformatting_duration_seconds": round(duration, 2),
         "videos_processed": len(video_details),
         "details": video_details
     }

@@ -8,6 +8,43 @@
 4. Restructure data from game state recognition output format to dribling detection output
 5. Run dribling detection algorithm on data
 
+## Installation
+
+### 1. Clone repositories
+This includes this repository, as well as the two dependancy repositories:
+```bash
+git clone git@github.com:eirikeg1/dribbling-detection-pipeline.git
+cd dribbling-detection-pipeline
+mkdir dependencies
+cd dependencies
+git clone https://github.com/SoccerNet/sn-gamestate.git
+git clone https://github.com/TrackingLaboratory/tracklab.git
+```
+
+### 2. Install dependencies
+
+#### 1. Create conda environment
+```bash
+    conda create -n dribling-detection pip python=3.10 pytorch==1.13.1 torchvision==0.14.1 pytorch-cuda=11.7 -c pytorch -c nvidia -y
+    conda activate dribling-detection
+```
+
+#### 2. Video splitting
+The video splitting uses pyscenedetect
+```bash
+    pip install scenedetect
+```
+
+#### 3. Object position annotation pipeline
+```bash
+    cd dependencies/sn-gamestate
+    pip install -e .
+    pip install -e ../tracklab
+    mim install mmcv==2.0.1
+```
+
+#### 4. Dribbling detection pipeline
+
 ## Run:
 
 Some configurations can be changed in `config.env`. You can use custom config files, which can be
