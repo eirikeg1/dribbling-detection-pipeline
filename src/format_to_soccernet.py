@@ -1,17 +1,16 @@
-#!/usr/bin/env python3
-
 import argparse
 import os
 import json
 import subprocess
 import datetime
 import glob
-import default_values
+import shutil
+import default_values  # Adjust or remove if not needed
 
 def get_video_fps(video_path):
     """
-    Returns the frames per second (float) of the first video stream,
-    by parsing ffprobe's 'r_frame_rate' output.
+    Returns the frames per second (float) of the first video stream by parsing
+    ffprobe's 'r_frame_rate' output (e.g., '25/1', '30/1', or '30000/1001').
     """
     cmd = [
         'ffprobe',
@@ -22,19 +21,18 @@ def get_video_fps(video_path):
         video_path
     ]
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-    raw_rate = proc.stdout.strip()  # e.g., "25/1" or "30/1" or "30000/1001"
+    raw_rate = proc.stdout.strip()
 
     if '/' in raw_rate:
-        top, bottom = raw_rate.split('/')
-        return float(top) / float(bottom)
+        numerator, denominator = raw_rate.split('/')
+        return float(numerator) / float(denominator)
     else:
         return float(raw_rate)
 
-
 def extract_frames(video_path, output_folder):
     """
-    Extract all frames from the video file (video_path),
-    scaling them to 1920x1080, and save as sequential .jpg images.
+    Extracts all frames from the video file (video_path) at 1920x1080 resolution
+    and saves them as sequential .jpg images in output_folder.
     """
     os.makedirs(output_folder, exist_ok=True)
     
@@ -47,25 +45,22 @@ def extract_frames(video_path, output_folder):
         '-vsync', '0',
         os.path.join(output_folder, '%06d.jpg')
     ]
-    
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-
 
 def get_frame_count(folder_path):
     """
-    Count how many .jpg files are in the folder.
+    Counts how many .jpg files are in the specified folder_path.
     """
     return len(glob.glob(os.path.join(folder_path, '*.jpg')))
 
-
 def create_labels_json(video_name, frame_rate, total_frames, output_file):
     """
-    Create a minimal Labels-GameState.json file that includes:
-      - frame_rate
-      - seq_length (total number of frames)
-      - clip_stop as an optional 'duration' in ms if desired
+    Creates a minimal Labels-GameState.json file containing:
+        - frame_rate
+        - seq_length (total number of frames)
+        - clip_stop = total duration in milliseconds
+      Adds a list of images with forced resolution (1920x1080).
     """
-    # Simple duration in ms = (total_frames / frame_rate) * 1000
     duration_ms = int((total_frames / frame_rate) * 1000) if frame_rate > 0 else 0
 
     info_block = {
@@ -79,7 +74,6 @@ def create_labels_json(video_name, frame_rate, total_frames, output_file):
         "clip_stop": str(duration_ms)
     }
 
-    # Build a minimal list of images, each with the forced 1920x1080 resolution
     images_list = []
     for i in range(1, total_frames + 1):
         file_name = f"{i:06d}.jpg"
@@ -92,10 +86,9 @@ def create_labels_json(video_name, frame_rate, total_frames, output_file):
             "width": 1920
         })
 
-    # Minimal placeholders for annotations or categories if needed
     annotations_list = []
     categories_list = []
-    # categories_list = default_values.categories
+    # categories_list = default_values.categories  # Uncomment if you use default_values
 
     data = {
         "info": info_block,
@@ -106,7 +99,6 @@ def create_labels_json(video_name, frame_rate, total_frames, output_file):
 
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
-
 
 def main():
     parser = argparse.ArgumentParser(description="Format videos into a structured directory with frames + JSON.")
@@ -119,43 +111,52 @@ def main():
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
+
+    # Create a unique run folder under the output directory
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H_%M%-S")
+    run_folder = os.path.join(output_dir, f"run_{timestamp}")
+    train_dir = os.path.join(run_folder, "train")
+    os.makedirs(train_dir, exist_ok=True)
+
+    # Create a processed folder for this run
+    processed_run_folder = os.path.join("processed", f"run_{timestamp}")
+    os.makedirs(processed_run_folder, exist_ok=True)
+
+    video_counter = 1
     
     # Loop through all mp4/webm files in input_dir
     for file_name in os.listdir(input_dir):
         if file_name.lower().endswith(('.mp4', '.webm')):
-            base_name = os.path.splitext(file_name)[0]
-            # Replace spaces with dashes
-            base_name_sanitized = base_name.replace(' ', '-').lower()
+            # Create subfolder "video{video_counter}" and img1 for frames
+            video_subfolder_name = f"video{video_counter}"
+            video_dir = os.path.join(train_dir, video_subfolder_name)
+            img_dir = os.path.join(video_dir, "img1")
 
-            # Append current date/time for uniqueness
-            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            new_folder_name = f"{base_name_sanitized}-{timestamp}"
-            new_folder_path = os.path.join(output_dir, new_folder_name)
-            train_dir = os.path.join(new_folder_path, 'train')
-            video_dir = os.path.join(train_dir, 'video1')
-            img_dir = os.path.join(video_dir, 'img1')
-            
-            os.makedirs(new_folder_path, exist_ok=True)
-            os.makedirs(train_dir, exist_ok=True)
+            os.makedirs(video_dir, exist_ok=True)
             os.makedirs(img_dir, exist_ok=True)
 
+            video_counter += 1
+
+            # Prepare for processing
             video_path = os.path.join(input_dir, file_name)
+            base_name = os.path.splitext(file_name)[0]
+            base_name_sanitized = base_name.replace(' ', '-').lower()
+
             print(f"Processing video: {video_path}...")
 
             # 1) Get the actual FPS from the video
             fps = get_video_fps(video_path)
             print(f"  - Detected FPS: {fps}")
 
-            # 2) Extract frames, scaling to 1920x1080
+            # 2) Extract frames (scaled to 1920x1080) into img1
             extract_frames(video_path, img_dir)
-            print(f"\nFrames extracted to: {img_dir}")
+            print(f"  - Frames extracted to: {img_dir}")
             
-            # 3) Count how many frames we extracted
+            # 3) Count the frames
             total_frames = get_frame_count(img_dir)
             print(f"  - Total frames extracted: {total_frames}")
 
-            # 4) Create Labels-GameState.json with the relevant info
-            print(f"\nCreating Labels-GameState.json...")
+            # 4) Create Labels-GameState.json in the same video folder
             json_path = os.path.join(video_dir, "Labels-GameState.json")
             create_labels_json(
                 video_name=base_name_sanitized,
@@ -165,8 +166,11 @@ def main():
             )
             print(f"  - {json_path} created.")
 
-    print("Processing completed.\n")
+            # 5) Move the original video to the processed folder for this run
+            shutil.move(video_path, processed_run_folder)
+            print(f"  - Moved video to: {processed_run_folder}\n")
 
+    print("All videos have been processed and moved.\n")
 
 if __name__ == "__main__":
     main()
