@@ -26,7 +26,7 @@ fi
 mkdir -p "$output_folder"
 
 # Run the scenedetect command
-scenedetect -i "$input_file" detect-hist split-video -o "$output_folder"
+scenedetect -i "$input_file" detect-hist split-video -hq -o "$output_folder"
 
 
 echo "Scene detection and splitting complete."
