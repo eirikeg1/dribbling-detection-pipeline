@@ -1,11 +1,12 @@
 # Dribling Detection Pipeline
 
-## Steps
+## Pipeline Steps
 
-1. Split the video (split_video_script.sh)
+1. Split the video into shorter videoclips on scene change (different camera angles, zoom, etc.)
 2. Restructure data to soccernet format
 3. Run modified game state recognition pipeline (for player bounding boxes, 2d coordinates and teams)
-4. Run dribling detection algorithm on data
+4. Restructure data from game state recognition output format to dribling detection output
+5. Run dribling detection algorithm on data
 
 ## Run:
 
