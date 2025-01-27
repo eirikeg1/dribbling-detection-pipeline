@@ -135,7 +135,7 @@ def main():
     video_counter = 1
 
     # Loop through all mp4/webm files in input_dir
-    for file_name in os.listdir(input_dir):
+    for file_name in sorted(os.listdir(input_dir)):
         if file_name.lower().endswith(('.mp4', '.webm')):
             # Create subfolder "video{video_counter}" and img1 for frames
             video_subfolder_name = f"video{video_counter}"
