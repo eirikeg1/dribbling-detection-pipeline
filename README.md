@@ -8,8 +8,19 @@
 4. Run dribling detection algorithm on data
 
 ## Run:
-Fill out config file
+
+Some configurations can be changed in `config.env`. The config
+
 ```bash
-./src/run_pipeline.sh -c <config-file.env> -i <input-video>
+./src/run_pipeline.sh -i <input-video> [optional-args]
+```
+
+### Arguments
+- `-i <input-video>`: Path to the input video file (required)
+- `-c <config-file>`: Path to the configuration file (optional, `config.env` from root is default)
+
+For example:
+```bash
+./src/run_pipeline.sh -i my-video.mp4 -c custom-config.env
 ```
 
