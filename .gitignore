@@ -1,3 +1,7 @@
+# Datafiles
 inputs
 outputs
 processed
+
+# Compiled files
+*.pyc
