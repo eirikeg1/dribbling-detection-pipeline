@@ -43,6 +43,10 @@ fi
 if [ "$SPLIT_VIDEO" = true ]; then
     echo "Step 1: Splitting the video..."
     bash src/split_video_script.sh -i "$input_video" -o "$SPLIT_OUTPUT_DIR"
+    if [ $? -ne 0 ]; then
+        echo "Error: Video splitting failed."
+        exit 1
+    fi
     echo "Video splitting completed."
 fi
 
@@ -56,6 +60,7 @@ fi
 if [ "$GAME_STATE_PIPELINE" = true ]; then
     echo "Step 3: Running game state pipeline..."
     # TODO: add game state pipeline here
+    python -m tracklab.main -cn soccernet
     echo "Game state pipeline completed."
 fi
 
