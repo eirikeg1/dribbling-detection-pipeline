@@ -33,6 +33,8 @@ git clone https://github.com/TrackingLaboratory/tracklab.git
 The video splitting uses pyscenedetect
 ```bash
     pip install scenedetect
+    conda install -c conda-forge ffmpeg
+    conda install -c conda-forge x264
 ```
 
 #### 3. Object position annotation pipeline
