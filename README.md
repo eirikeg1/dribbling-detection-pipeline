@@ -10,15 +10,11 @@
 
 ## Installation
 
-### 1. Clone repositories
+### 1. Clone repository
 This includes this repository, as well as the two dependancy repositories:
 ```bash
-git clone git@github.com:eirikeg1/dribbling-detection-pipeline.git
-cd dribbling-detection-pipeline
-mkdir dependencies
-cd dependencies
-git clone https://github.com/SoccerNet/sn-gamestate.git
-git clone https://github.com/TrackingLaboratory/tracklab.git
+    git clone git@github.com:eirikeg1/dribbling-detection-pipeline.git
+    cd dribbling-detection-pipeline
 ```
 
 ### 2. Install dependencies
@@ -39,7 +35,14 @@ The video splitting uses pyscenedetect
 
 #### 3. Object position annotation pipeline
 ```bash
-    cd dependencies/sn-gamestate
+    # Download repositories
+    mkdir dependencies
+    cd dependencies
+    git clone https://github.com/eirikeg1/sn-gamestate-fork.git sn-gamestate
+    git clone https://github.com/eirikeg1/tracklab-fork.git tracklab
+
+    # Install dependencies
+    cd sn-gamestate
     pip install -e .
     pip install -e ../tracklab
     mim install mmcv==2.0.1

@@ -2,9 +2,11 @@
 inputs
 outputs
 processed
+pretrained_models
 
 # Compiled files
 *.pyc
 
 # Dependencies
 dependencies/*
+

@@ -9,10 +9,10 @@ config_file="config.env"
 input_video=""
 
 # Parse input arguments
-while getopts "c:i:" flag; do
+while getopts "c:i:f:" flag; do
     case "${flag}" in
-        c) config_file=${OPTARG} ;;  # Config file
-        i) input_video=${OPTARG} ;;  # Input video file
+        c) config_file=${OPTARG} ;;
+        i) input_video=${OPTARG} ;;
         *)
             echo "Usage: bash run_pipeline.sh [-c <config-file.env>] -i <input-video>"
             exit 1
@@ -53,13 +53,19 @@ fi
 # Step 2: Restructure data to SoccerNet format
 if [ "$FORMAT_VIDEO" = true ]; then
     echo "Step 2: Restructuring data to SoccerNet format..."
-    python3 src/format_to_soccernet.py -i "$SPLIT_OUTPUT_DIR" -o "$OUTPUT_DIR"
+    python3 src/format_to_soccernet.py -i "$SPLIT_OUTPUT_DIR" -o "$OUTPUT_DIR" --object_detection_config "object-detection-config.yaml"
 fi
 
 # Step 3: Game state pipeline (future implementation)
 if [ "$GAME_STATE_PIPELINE" = true ]; then
+    # Copy the object detection config file to correct dependency location
+    echo "Copying object-detection-config.yaml to the correct folder"
+    mkdir -p "$SOCCERNET_CONFIG_DIR"
+    cp object-detection-config.yaml "$SOCCERNET_CONFIG_DIR/soccernet.yaml"
+    echo ""
+
+    # Run object detection, tracking, homography transformation etc.
     echo "Step 3: Running game state pipeline..."
-    # TODO: add game state pipeline here
     python -m tracklab.main -cn soccernet
     echo "Game state pipeline completed."
 fi

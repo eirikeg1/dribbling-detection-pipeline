@@ -105,13 +105,15 @@ def main():
     parser = argparse.ArgumentParser(description="Format videos into a structured directory with frames + JSON.")
     parser.add_argument('-i', '--input_dir', type=str, default='./inputs', help='Input directory containing videos')
     parser.add_argument('-o', '--output_dir', type=str, default='./outputs', help='Output directory for structured data')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Print detailed information')
+    parser.add_argument('--object_detection_config', type=str, default=None, help='Path to object detection config file')
     args = parser.parse_args()
     
     input_dir = args.input_dir
     output_dir = args.output_dir
     verbose = args.verbose
-
+    object_detection_config = args.object_detection_config
+    
     # Record start time
     start_time = time.time()
     start_dt = datetime.datetime.now()
@@ -200,13 +202,30 @@ def main():
         "end_time": end_dt.isoformat(),
         "reformatting_duration_seconds": round(duration, 2),
         "videos_processed": len(video_details),
-        "details": video_details
+        "details": video_details,
+        "updated_object_detection_config": object_detection_config is not None
     }
 
     # Write the data info file in the run folder
     data_info_path = os.path.join(run_folder, "data_info.json")
     with open(data_info_path, 'w', encoding='utf-8') as f:
         json.dump(data_info, f, indent=4)
+        
+    # Update the dataset_path in the object detection config file, if provided
+    if object_detection_config:
+        with open(object_detection_config, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+        
+        for i, line in enumerate(lines):
+            if "dataset_path:" in line:
+                absolute_run_folder = os.path.abspath(run_folder)
+                lines[i] = f"  dataset_path: {absolute_run_folder}\n"
+                print(f"Updated 'dataset_path' in '{object_detection_config}' to '{absolute_run_folder}'\n")
+
+        with open(object_detection_config, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+            
 
     print("All videos have been processed and moved.")
     print(f"Run information written to {data_info_path}\n")
