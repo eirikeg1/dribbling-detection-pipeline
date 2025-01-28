@@ -56,7 +56,7 @@ if [ "$FORMAT_VIDEO" = true ]; then
     python3 src/format_to_soccernet.py -i "$SPLIT_OUTPUT_DIR" -o "$OUTPUT_DIR" --object_detection_config "object-detection-config.yaml"
 fi
 
-# Step 3: Game state pipeline (future implementation)
+# Step 3: Game state pipeline
 if [ "$GAME_STATE_PIPELINE" = true ]; then
     # Copy the object detection config file to correct dependency location
     echo "Copying object-detection-config.yaml to the correct folder"
