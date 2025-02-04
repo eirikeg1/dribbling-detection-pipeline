@@ -4,6 +4,10 @@ outputs
 processed
 pretrained_models
 
+# Other directories
+experimentation
+temp_files
+
 # Compiled files
 *.pyc
 
