@@ -78,7 +78,7 @@ def create_labels_json(video_name, frame_rate, total_frames, output_file):
     images_list = []
     for i in range(1, total_frames + 1):
         file_name = f"{i:06d}.jpg"
-        image_id_str = f"{i:09d}"
+        image_id_str = f"{i:06d}"
         images_list.append({
             "is_labeled": False,
             "image_id": image_id_str,
@@ -107,12 +107,14 @@ def main():
     parser.add_argument('-o', '--output_dir', type=str, default='./outputs', help='Output directory for structured data')
     parser.add_argument('-v', '--verbose', action='store_true', help='Print detailed information')
     parser.add_argument('--object_detection_config', type=str, default=None, help='Path to object detection config file')
+    parser.add_argument('--temp_file_dir', type=str, default='./temp_files', help='Directory to store output folder path')
     args = parser.parse_args()
     
     input_dir = args.input_dir
     output_dir = args.output_dir
     verbose = args.verbose
     object_detection_config = args.object_detection_config
+    temp_file_dir = args.temp_file_dir
     
     # Record start time
     start_time = time.time()
@@ -140,7 +142,7 @@ def main():
     for file_name in sorted(os.listdir(input_dir)):
         if file_name.lower().endswith(('.mp4', '.webm')):
             # Create subfolder "video{video_counter}" and img1 for frames
-            video_subfolder_name = f"video{video_counter}"
+            video_subfolder_name = os.path.splitext(file_name)[0].lower()
             video_dir = os.path.join(train_dir, video_subfolder_name)
             img_dir = os.path.join(video_dir, "img1")
 
@@ -211,7 +213,8 @@ def main():
     with open(data_info_path, 'w', encoding='utf-8') as f:
         json.dump(data_info, f, indent=4)
         
-    # Update the dataset_path in the object detection config file, if provided
+    absolute_run_folder = os.path.abspath(run_folder)
+    # Update the dataset_path and data_dir in the object detection config file, if provided
     if object_detection_config:
         with open(object_detection_config, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -219,13 +222,24 @@ def main():
         
         for i, line in enumerate(lines):
             if "dataset_path:" in line:
-                absolute_run_folder = os.path.abspath(run_folder)
                 lines[i] = f"  dataset_path: {absolute_run_folder}\n"
                 print(f"Updated 'dataset_path' in '{object_detection_config}' to '{absolute_run_folder}'\n")
+            if "data_dir:" in line:
+                lines[i] = f"data_dir: {absolute_run_folder}\n"
+                print(f"Updated 'data_dir' in '{object_detection_config}' to '{absolute_run_folder}'\n")
+            # Find 'run:' line, then look for its 'dir:' on the next line.
+            # Adjust indentation as needed to maintain valid YAML.
+            if line.strip() == "run:":
+                if i + 1 < len(lines) and "dir:" in lines[i + 1]:
+                    lines[i + 1] = f"    dir: {absolute_run_folder}/game-state-output\n"
+                    print(f"Updated 'run.dir' in '{object_detection_config}' to '{absolute_run_folder}'")
+                with open(object_detection_config, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
 
-        with open(object_detection_config, 'w', encoding='utf-8') as f:
-            f.writelines(lines)
-            
+    # Store output file name in "temp_file_dir/data_dir.txt"
+    os.makedirs(temp_file_dir, exist_ok=True)
+    with open(os.path.join(temp_file_dir, "data_dir.txt"), 'w', encoding='utf-8') as f:
+        f.write(absolute_run_folder)
 
     print("All videos have been processed and moved.")
     print(f"Run information written to {data_info_path}\n")
