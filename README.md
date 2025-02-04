@@ -2,7 +2,7 @@
 
 ## Pipeline Steps
 
-1. Split the video into shorter videoclips on scene change (different camera angles, zoom, etc.)
+1. Split the video into shorter video clips on scene change (different camera angles, zoom, etc.)
 2. Restructure data to soccernet format
 3. Run modified game state recognition pipeline (for player bounding boxes, 2d coordinates and teams)
 4. Restructure data from game state recognition output format to dribling detection output
@@ -18,6 +18,7 @@ This includes this repository, as well as the two dependancy repositories:
 ```
 
 ### 2. Install dependencies
+All steps are optional, you do not need to download the steps which are deactivated in `config.env`.
 
 #### 1. Create conda environment
 ```bash
@@ -26,7 +27,6 @@ This includes this repository, as well as the two dependancy repositories:
 ```
 
 #### 2. Video splitting
-The video splitting uses pyscenedetect
 ```bash
     pip install scenedetect
     conda install -c conda-forge ffmpeg
@@ -46,25 +46,32 @@ The video splitting uses pyscenedetect
     pip install -e .
     pip install -e ../tracklab
     mim install mmcv==2.0.1
-```
+``` 
 
 #### 4. Dribbling detection pipeline
 
 ## Run:
 
 Some configurations can be changed in `config.env`. You can use custom config files, which can be
-changed with the `-c` flag.
+changed with the `-c` flag. This includes different directory paths and what parts of the pipeline
+to run.
+
+All steps requires outputs from the previous step to be done by default. By changing the directories
+(or moving files) in the `config.env` this can be fixed. (object detection config in `dependency` 
+folder should also be changed if data-formatting is not run)
 
 ```bash
 ./src/run_pipeline.sh -i <input-video> [optional-args]
 ```
 
 ### Arguments
-- `-i <input-video>`: Path to the input video file (required)
-- `-c <config-file>`: Path to the configuration file (optional, `config.env` from root is default)
+- `-i <input-video>`: (required) Path to the input video file
+- `-c <config-file>`: (optional, `config.env` is default) Path to the configuration file
+- `-t <temp-file-dir>`: (optional, `temp_files` is default) Path to a directory for temporary files 
+    during runtime. Make sure this folder is unique across runs if running in parallel. The folder 
+    is created if it does not already exist
 
 For example:
 ```bash
 ./src/run_pipeline.sh -i my-video.mp4 -c custom-config.env
 ```
-
