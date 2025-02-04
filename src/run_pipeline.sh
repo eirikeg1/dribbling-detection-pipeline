@@ -5,14 +5,18 @@
 
 set -e # Exit on error
 
+start_time=$SECONDS # Start timer
+
 config_file="config.env"
 input_video=""
+tmp_file_dir="temp_files" # Use unique directory for parallel runs, folder is automatically created
 
 # Parse input arguments
-while getopts "c:i:f:" flag; do
+while getopts "c:i:t:" flag; do
     case "${flag}" in
         c) config_file=${OPTARG} ;;
         i) input_video=${OPTARG} ;;
+        t) tmp_file_dir=${OPTARG} ;;
         *)
             echo "Usage: bash run_pipeline.sh [-c <config-file.env>] -i <input-video>"
             exit 1
@@ -41,7 +45,7 @@ fi
 
 # Step 1: Split the video
 if [ "$SPLIT_VIDEO" = true ]; then
-    echo "Step 1: Splitting the video..."
+    echo "Step 1: Splitting the video '$input_video' into shorter video clips..."
     bash src/split_video_script.sh -i "$input_video" -o "$SPLIT_OUTPUT_DIR"
     if [ $? -ne 0 ]; then
         echo "Error: Video splitting failed."
@@ -53,21 +57,33 @@ fi
 # Step 2: Restructure data to SoccerNet format
 if [ "$FORMAT_VIDEO" = true ]; then
     echo "Step 2: Restructuring data to SoccerNet format..."
-    python3 src/format_to_soccernet.py -i "$SPLIT_OUTPUT_DIR" -o "$OUTPUT_DIR" --object_detection_config "object-detection-config.yaml"
+    python3 src/format_to_soccernet.py -i "$SPLIT_OUTPUT_DIR" -o "$OUTPUT_DIR" --object_detection_config "object-detection-config.yaml" --temp_file_dir "$tmp_file_dir"
+    echo "Restructuring data to SoccerNet format completed."
 fi
 
 # Step 3: Game state pipeline
 if [ "$GAME_STATE_PIPELINE" = true ]; then
-    # Copy the object detection config file to correct dependency location
+    # 3.1 Copy the object detection config file to correct dependency location
     echo "Copying object-detection-config.yaml to the correct folder"
     mkdir -p "$SOCCERNET_CONFIG_DIR"
     cp object-detection-config.yaml "$SOCCERNET_CONFIG_DIR/soccernet.yaml"
     echo ""
 
-    # Run object detection, tracking, homography transformation etc.
+    # 3.2 Run object detection, tracking, homography transformation etc.
     echo "Step 3: Running game state pipeline..."
     python -m tracklab.main -cn soccernet
     echo "Game state pipeline completed."
+
+    # 3.3 Reformat the predictions to standard SoccerNet format
+    echo "Reformatting predictions to SoccerNetGSR input format..."
+    data_dir="$(cat "${tmp_file_dir}/data_dir.txt")" # data_dir was written to file in step 3.1
+    python src/format_predictions_to_annotations.py --data_dir "$data_dir"
+
+    # 3.4 Interpolate missing annotations
+    echo "Interpolating annotations"
+    python src/interpolate_annotations.py --data_dir "$data_dir"
+
+    echo "Object detection pipeline completed."
 fi
 
 # Step 4: Dribble detection (future implementation)
@@ -77,4 +93,9 @@ if [ "$DRIBLE_DETECTION" = true ]; then
     echo "Dribble detection completed."
 fi
 
-echo "Pipeline completed successfully!"
+end_time=$SECONDS
+elapsed_time=$((end_time - start_time))
+elapsed_hours=$((elapsed_time / 3600))
+elapsed_minutes=$(((elapsed_time % 3600) / 60))
+elapsed_seconds=$((elapsed_time % 60))
+echo "Pipeline completed successfully in ${elapsed_hours}h:${elapsed_minutes}m:${elapsed_seconds}s!"
