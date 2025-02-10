@@ -6,14 +6,15 @@
 2. Restructure data to soccernet format
 3. Run modified game state recognition pipeline (for player bounding boxes, 2d coordinates and teams)
 4. Restructure data from game state recognition output format to dribling detection output
-5. Run dribling detection algorithm on data
+5. Interpolate bounding boxes where there are gamps (for example if the ball is not detected in all frames)
+6. Run dribling detection algorithm on data
 
 ## Installation
 
 ### 1. Clone repository
 This includes this repository, as well as the two dependancy repositories:
 ```bash
-    git clone git@github.com:eirikeg1/dribbling-detection-pipeline.git
+    https://github.com/eirikeg1/dribbling-detection-pipeline.git
     cd dribbling-detection-pipeline
 ```
 
