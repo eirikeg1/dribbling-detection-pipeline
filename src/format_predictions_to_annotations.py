@@ -122,11 +122,14 @@ def build_annotation(pred_obj, ann_id):
     # lines
     if "lines" in pred_obj:
         ann["lines"] = {}
-        for line_name, points in pred_obj["lines"].items():
-            ann["lines"][line_name] = [
-                {"x": float(pt.get("x", 0.0)), "y": float(pt.get("y", 0.0))}
-                for pt in points
-            ]
+        try:
+            for line_name, points in pred_obj["lines"].items():
+                ann["lines"][line_name] = [
+                    {"x": float(pt.get("x", 0.0)), "y": float(pt.get("y", 0.0))}
+                    for pt in points
+                ]
+        except Exception as e:
+            print(f"Error in lines: {e}")
 
     return ann
 
