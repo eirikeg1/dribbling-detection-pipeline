@@ -80,8 +80,8 @@ def interpolate_group(annotations):
 
         gap_size = frame2 - frame1 - 1
         if 0 < gap_size <= MAX_GAP_FRAMES:
-            print(f"img_id: {frame1 + step:06d}", a1["image_id"], "category id:", a1["category_id"], "track id:", a1["track_id"], "gap size:", gap_size)
             for step in range(1, gap_size + 1):
+                print(f" * img_id: {(frame1 + step)}", a1["image_id"], "category id:", a1["category_id"], "track id:", a1["track_id"], "gap size:", gap_size)
                 alpha = step / (gap_size + 1.0)
                 new_ann = {
                     "id": "interpolated",  # Temporary ID; will be overwritten
@@ -109,24 +109,31 @@ def interpolate_group(annotations):
     interpolated.append(annotations[-1])
     return interpolated
 
-def interpolate_labels(labels_data):
-    """
-    Given a Labels-GameState.json structure, interpolate missing frames
-    and return a new structure with updated annotations.
-    """
-    groups = defaultdict(list)
-    for ann in labels_data["annotations"]:
-        cat_id = ann["category_id"]
-        t_id = ann["track_id"] if ann["track_id"] is not None else -1
-        groups[(cat_id, t_id)].append(ann)
+def get_group_key(ann):
+    BALL_CATEGORY_ID = 4
+    if ann["category_id"] == BALL_CATEGORY_ID:
+        # Force a single group for all ball annotations.
+        return (ann["category_id"], -1)
+    else:
+        # For other categories, use the provided track_id (or -1 if None)
+        return (ann["category_id"], ann["track_id"] if ann["track_id"] is not None else -1)
 
-    # Sort each group's annotations and interpolate gaps
+
+def interpolate_labels(labels_data):
+    groups = defaultdict(list)
     interpolated_groups = []
+
+    # Group annotations by category_id and track_id (put balls in a single group).
+    for ann in labels_data["annotations"]:
+        key = get_group_key(ann)
+        groups[key].append(ann)
+
+    # Process groups.
     for key, ann_list in groups.items():
         ann_list.sort(key=lambda x: int(x["image_id"]))
         interpolated_groups.extend(interpolate_group(ann_list))
 
-    # Sort all annotations and assign new IDs
+    # Sort all annotations and assign new IDs.
     interpolated_groups.sort(key=lambda x: int(x["image_id"]))
     for i, ann in enumerate(interpolated_groups, start=1):
         ann["id"] = f"{i:06d}"
