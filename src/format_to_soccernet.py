@@ -30,17 +30,26 @@ def get_video_fps(video_path):
     else:
         return float(raw_rate)
 
-def extract_frames(video_path, output_folder):
+def extract_frames(video_path, output_folder, frame_interval=1):
     """
-    Extracts all frames from the video file (video_path) at 1920x1080 resolution
+    Extracts frames from the video file (video_path) at 1920x1080 resolution
     and saves them as sequential .jpg images in output_folder.
+
+    If frame_interval > 1, only every nth frame is extracted using the framestep filter.
+    For example, if frame_interval == 10, frames 1, 11, 21, ... will be extracted.
     """
     os.makedirs(output_folder, exist_ok=True)
+    
+    if frame_interval > 1:
+        # Use the framestep filter to output one frame every {frame_interval} frames.
+        filter_chain = f"framestep={frame_interval},scale=1920:1080"
+    else:
+        filter_chain = "scale=1920:1080"
     
     cmd = [
         'ffmpeg',
         '-i', video_path,
-        '-vf', 'scale=1920:1080',
+        '-vf', filter_chain,
         '-qscale:v', '2',
         '-start_number', '1',
         '-vsync', '0',
@@ -108,6 +117,8 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Print detailed information')
     parser.add_argument('--object_detection_config', type=str, default=None, help='Path to object detection config file')
     parser.add_argument('--temp_file_dir', type=str, default='./temp_files', help='Directory to store output folder path')
+    parser.add_argument('--frame_interval', type=int, default=1,
+                        help='Extract every nth frame (e.g., 10 to extract every tenth frame)')
     args = parser.parse_args()
     
     input_dir = args.input_dir
@@ -115,6 +126,7 @@ def main():
     verbose = args.verbose
     object_detection_config = args.object_detection_config
     temp_file_dir = args.temp_file_dir
+    frame_interval = args.frame_interval
     
     # Record start time
     start_time = time.time()
@@ -135,13 +147,12 @@ def main():
 
     # For collecting summary info about the run
     video_details = []
-
     video_counter = 1
 
     # Loop through all mp4/webm files in input_dir
     for file_name in sorted(os.listdir(input_dir)):
         if file_name.lower().endswith(('.mp4', '.webm')):
-            # Create subfolder "video{video_counter}" and img1 for frames
+            # Create subfolder and img1 folder for frames
             video_subfolder_name = os.path.splitext(file_name)[0].lower()
             video_dir = os.path.join(train_dir, video_subfolder_name)
             img_dir = os.path.join(video_dir, "img1")
@@ -153,12 +164,11 @@ def main():
             base_name = os.path.splitext(file_name)[0]
             base_name_sanitized = base_name.replace(' ', '-').lower()
 
-
             # 1) Get the actual FPS from the video
             fps = get_video_fps(video_path)
 
-            # 2) Extract frames (scaled to 1920x1080) into img1
-            extract_frames(video_path, img_dir)
+            # 2) Extract frames using the provided frame_interval
+            extract_frames(video_path, img_dir, frame_interval=frame_interval)
             
             # 3) Count the frames
             total_frames = get_frame_count(img_dir)
@@ -219,7 +229,6 @@ def main():
         with open(object_detection_config, 'r', encoding='utf-8') as f:
             lines = f.readlines()
 
-        
         for i, line in enumerate(lines):
             if "dataset_path:" in line:
                 lines[i] = f"  dataset_path: {absolute_run_folder}\n"
@@ -227,8 +236,6 @@ def main():
             if "data_dir:" in line:
                 lines[i] = f"data_dir: {absolute_run_folder}\n"
                 print(f"Updated 'data_dir' in '{object_detection_config}' to '{absolute_run_folder}'\n")
-            # Find 'run:' line, then look for its 'dir:' on the next line.
-            # Adjust indentation as needed to maintain valid YAML.
             if line.strip() == "run:":
                 if i + 1 < len(lines) and "dir:" in lines[i + 1]:
                     lines[i + 1] = f"    dir: {absolute_run_folder}/game-state-output\n"

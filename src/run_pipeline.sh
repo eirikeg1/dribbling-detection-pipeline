@@ -1,24 +1,25 @@
 #!/bin/bash
 
+set -e  # Exit on error
+start_time=$SECONDS  # Start timer
+
 # ==================================================================================================
 # Parsing arguments and config
 
-set -e # Exit on error
-
-start_time=$SECONDS # Start timer
-
 config_file="config.env"
 input_video=""
-tmp_file_dir="temp_files" # Use unique directory for parallel runs, folder is automatically created
+tmp_file_dir="temp_files" # Use unique directory for parallel runs; folder is automatically created
+frame_interval=1
 
 # Parse input arguments
-while getopts "c:i:t:" flag; do
+while getopts "c:i:t:f:" flag; do
     case "${flag}" in
         c) config_file=${OPTARG} ;;
         i) input_video=${OPTARG} ;;
         t) tmp_file_dir=${OPTARG} ;;
+        f) frame_interval=${OPTARG} ;;
         *)
-            echo "Usage: bash run_pipeline.sh [-c <config-file.env>] -i <input-video>"
+            echo "Usage: bash run_pipeline.sh [-c <config-file.env>] -i <input-video> [-t <tmp_file_dir>] [-f <frame_interval>]"
             exit 1
             ;;
     esac
@@ -27,7 +28,7 @@ done
 # Check if input video file is provided
 if [ -z "$input_video" ]; then
     echo "Error: Input video file is required."
-    echo "Usage: bash run_pipeline.sh [-c <config-file.env>] -i <input-video>"
+    echo "Usage: bash run_pipeline.sh [-c <config-file.env>] -i <input-video> [-t <tmp_file_dir>] [-f <frame_interval>]"
     exit 1
 fi
 
@@ -57,7 +58,12 @@ fi
 # Step 2: Restructure data to SoccerNet format
 if [ "$FORMAT_VIDEO" = true ]; then
     echo "Step 2: Restructuring data to SoccerNet format..."
-    python3 src/format_to_soccernet.py -i "$SPLIT_OUTPUT_DIR" -o "$OUTPUT_DIR" --object_detection_config "object-detection-config.yaml" --temp_file_dir "$tmp_file_dir"
+    python3 src/format_to_soccernet.py \
+        -i "$SPLIT_OUTPUT_DIR" \
+        -o "$OUTPUT_DIR" \
+        --object_detection_config "object-detection-config.yaml" \
+        --temp_file_dir "$tmp_file_dir" \
+        --frame_interval "$frame_interval"
     echo "Restructuring data to SoccerNet format completed."
 fi
 
@@ -76,7 +82,7 @@ if [ "$GAME_STATE_PIPELINE" = true ]; then
 
     # 3.3 Reformat the predictions to standard SoccerNet format
     echo "Reformatting predictions to SoccerNetGSR input format..."
-    data_dir="$(cat "${tmp_file_dir}/data_dir.txt")" # data_dir was written to file in step 3.1
+    data_dir="$(cat "${tmp_file_dir}/data_dir.txt")"  # data_dir was written to file in step 2
     python src/format_predictions_to_annotations.py --data_dir "$data_dir"
 
     # 3.4 Interpolate missing annotations
