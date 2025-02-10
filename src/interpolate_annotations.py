@@ -20,7 +20,8 @@ import re
 import shutil  # for copying files
 
 # Maximum gap of frames to fill
-MAX_GAP_FRAMES = 100  # only fill in missing frames if gap <= MAX_GAP_FRAMES
+MAX_GAP_FRAMES = 35  # only fill in missing frames if gap <= MAX_GAP_FRAMES
+MAX_GAP_FRAMES_BALL = 100
 
 def linear_interpolate(val1, val2, alpha):
     """Perform simple linear interpolation."""
@@ -59,7 +60,7 @@ def interpolate_bbox_pitch_raw(b1, b2, alpha):
         "y_bottom_middle": linear_interpolate(b1["y_bottom_middle"], b2["y_bottom_middle"], alpha),
     }
 
-def interpolate_group(annotations):
+def interpolate_group(annotations, max_gap=MAX_GAP_FRAMES):
     """
     Given a list of annotations (with the same category_id and track_id)
     sorted by frame number, fill in missing frames by linear interpolation.
@@ -79,9 +80,8 @@ def interpolate_group(annotations):
         interpolated.append(a1)
 
         gap_size = frame2 - frame1 - 1
-        if 0 < gap_size <= MAX_GAP_FRAMES:
+        if 0 < gap_size <= max_gap:
             for step in range(1, gap_size + 1):
-                print(f" * img_id: {(frame1 + step)}", a1["image_id"], "category id:", a1["category_id"], "track id:", a1["track_id"], "gap size:", gap_size)
                 alpha = step / (gap_size + 1.0)
                 new_ann = {
                     "id": "interpolated",  # Temporary ID; will be overwritten
@@ -131,7 +131,9 @@ def interpolate_labels(labels_data):
     # Process groups.
     for key, ann_list in groups.items():
         ann_list.sort(key=lambda x: int(x["image_id"]))
-        interpolated_groups.extend(interpolate_group(ann_list))
+        max_gap = MAX_GAP_FRAMES_BALL if key[0] == 4 else MAX_GAP_FRAMES
+        
+        interpolated_groups.extend(interpolate_group(ann_list, max_gap=max_gap))
 
     # Sort all annotations and assign new IDs.
     interpolated_groups.sort(key=lambda x: int(x["image_id"]))
