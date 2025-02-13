@@ -22,7 +22,6 @@ for year in "${YEARS[@]}"; do
       "ytsearch5:${search_term}" \
       --match-filter "duration > 4200" \
       --ignore-errors \
-      --recode-video mp4 \
       -o "${safe_search_term}-%(playlist_index)s-%(title)s.%(ext)s"
 
     echo "------------------------------------------------"
