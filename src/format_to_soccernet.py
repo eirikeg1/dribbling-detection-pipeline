@@ -109,6 +109,26 @@ def create_labels_json(video_name, frame_rate, total_frames, output_file):
 
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
+        
+def update_configs(
+    absolute_run_folder,
+    object_detection_config
+):
+    with open(object_detection_config, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        for i, line in enumerate(lines):
+            if "dataset_path:" in line:
+                lines[i] = f"  dataset_path: {absolute_run_folder}\n"
+                print(f"Updated 'dataset_path' in '{object_detection_config}' to '{absolute_run_folder}'\n")
+            if "data_dir:" in line:
+                lines[i] = f"data_dir: {absolute_run_folder}\n"
+                print(f"Updated 'data_dir' in '{object_detection_config}' to '{absolute_run_folder}'\n")
+            if line.strip() == "run:":
+                if i + 1 < len(lines) and "dir:" in lines[i + 1]:
+                    lines[i + 1] = f"    dir: {absolute_run_folder}/game-state-output\n"
+                    print(f"Updated 'run.dir' in '{object_detection_config}' to '{absolute_run_folder}'")
+                with open(object_detection_config, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
 
 def main():
     parser = argparse.ArgumentParser(description="Format videos into a structured directory with frames + JSON.")
@@ -119,6 +139,8 @@ def main():
     parser.add_argument('--temp_file_dir', type=str, default='./temp_files', help='Directory to store output folder path')
     parser.add_argument('--frame_interval', type=int, default=1,
                         help='Extract every nth frame (e.g., 10 to extract every tenth frame)')
+    parser.add_argument('--move_processed_videos', type=bool, default=False)
+    parser.add_argument('--delete_processed_videos', type=bool, default=False)
     args = parser.parse_args()
     
     input_dir = args.input_dir
@@ -142,8 +164,9 @@ def main():
     os.makedirs(train_dir, exist_ok=True)
 
     # Create a processed folder for this run
-    processed_run_folder = os.path.join("processed", f"run_{timestamp}")
-    os.makedirs(processed_run_folder, exist_ok=True)
+    if args.move_processed_videos:
+        processed_run_folder = os.path.join("processed", f"run_{timestamp}")
+        os.makedirs(processed_run_folder, exist_ok=True)
 
     # For collecting summary info about the run
     video_details = []
@@ -181,17 +204,12 @@ def main():
                 total_frames=total_frames,
                 output_file=json_path
             )
-
-            if verbose:
-                print(f"Processing video: {video_path}...")
-                print(f"  - Detected FPS: {fps}")
-                print(f"  - Frames extracted to: {img_dir}")
-                print(f"  - Total frames extracted: {total_frames}")
-                print(f"  - Moved video to: {processed_run_folder}\n")
-                print(f"  - {json_path} created.")
                 
-            # 5) Move the original video to the processed folder for this run
-            shutil.move(video_path, processed_run_folder)
+            # 5) Move videos to 'processed' or delete them, if specified
+            if args.move_processed_videos:
+                shutil.move(video_path, processed_run_folder)
+            elif args.delete_processed_videos:
+                os.remove(video_path)              
 
             # Collect details for this video
             video_details.append({
@@ -201,6 +219,18 @@ def main():
                 "frames_extracted": total_frames
             })
 
+            if verbose:
+                print(f"Processing video: {video_path}...")
+                print(f"  - Detected FPS: {fps}")
+                print(f"  - Frames extracted to: {img_dir}")
+                print(f"  - Total frames extracted: {total_frames}")
+                print(f"  - {json_path} created.")
+                
+                if args.move_processed_videos:
+                    print(f"  - Moved video to: {processed_run_folder}\n")
+                elif args.delete_processed_videos:
+                    print(f"  - Deleted processed video.\n")
+                    
             video_counter += 1
 
     # Record end time and compute duration
@@ -226,29 +256,14 @@ def main():
     absolute_run_folder = os.path.abspath(run_folder)
     # Update the dataset_path and data_dir in the object detection config file, if provided
     if object_detection_config:
-        with open(object_detection_config, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-
-        for i, line in enumerate(lines):
-            if "dataset_path:" in line:
-                lines[i] = f"  dataset_path: {absolute_run_folder}\n"
-                print(f"Updated 'dataset_path' in '{object_detection_config}' to '{absolute_run_folder}'\n")
-            if "data_dir:" in line:
-                lines[i] = f"data_dir: {absolute_run_folder}\n"
-                print(f"Updated 'data_dir' in '{object_detection_config}' to '{absolute_run_folder}'\n")
-            if line.strip() == "run:":
-                if i + 1 < len(lines) and "dir:" in lines[i + 1]:
-                    lines[i + 1] = f"    dir: {absolute_run_folder}/game-state-output\n"
-                    print(f"Updated 'run.dir' in '{object_detection_config}' to '{absolute_run_folder}'")
-                with open(object_detection_config, 'w', encoding='utf-8') as f:
-                    f.writelines(lines)
+        update_configs(absolute_run_folder, object_detection_config)
 
     # Store output file name in "temp_file_dir/data_dir.txt"
     os.makedirs(temp_file_dir, exist_ok=True)
     with open(os.path.join(temp_file_dir, "data_dir.txt"), 'w', encoding='utf-8') as f:
         f.write(absolute_run_folder)
 
-    print("All videos have been processed and moved.")
+    print("All videos have been processed")
     print(f"Run information written to {data_info_path}\n")
 
 if __name__ == "__main__":
