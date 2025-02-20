@@ -21,7 +21,7 @@ def get_video_fps(video_path):
         '-of', 'default=noprint_wrappers=1:nokey=1',
         video_path
     ]
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True, timeout=10)
     raw_rate = proc.stdout.strip()
 
     if '/' in raw_rate:
