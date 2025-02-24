@@ -132,15 +132,15 @@ log+="Pipeline completed successfully in ${elapsed_hours}h:${elapsed_minutes}m:$
 
 echo "$log" >> "$OUTPUT_DIR/pipeline-log.txt"
 
-# Step 5: Clean up
-if [ "$delete_all_data" = true ]; then
-    echo "Cleaning up temporary files and data..."
+# # Step 5: Clean up
+# if [ "$delete_all_data" = true ]; then
+#     echo "Cleaning up temporary files and data..."
     
-    mkdir -p "$OUTPUT_DIR/game-state-configs"  
+#     mkdir -p "$OUTPUT_DIR/game-state-configs"  
 
-    # Check and remove directories if they exist
-    [ -d "$tmp_file_dir" ] && rm -rf "$tmp_file_dir"
-    [ -d "$OUTPUT_DIR/game-state-output" ] && rm -rf "$OUTPUT_DIR/game-state-output"
-    [ -d "$OUTPUT_DIR/formatted-predictions" ] && rm -rf "$OUTPUT_DIR/formatted-predictions"
-    [ -d "$OUTPUT_DIR/train" ] && rm -rf "$OUTPUT_DIR/train"
-fi
+#     # Check and remove directories if they exist
+#     [ -d "$tmp_file_dir" ] && rm -rf "$tmp_file_dir"
+#     [ -d "$OUTPUT_DIR/game-state-output" ] && rm -rf "$OUTPUT_DIR/game-state-output"
+#     [ -d "$OUTPUT_DIR/formatted-predictions" ] && rm -rf "$OUTPUT_DIR/formatted-predictions"
+#     [ -d "$OUTPUT_DIR/train" ] && rm -rf "$OUTPUT_DIR/train"
+# fi
