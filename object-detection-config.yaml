@@ -47,7 +47,7 @@ data_dir: # THIS WILL BE AUTOMATICALLY UPDATED WHEN USING THE DIBLING DETECTION 
 model_dir: "${project_dir}/pretrained_models"
 
 # Machine configuration
-num_cores: 10
+num_cores: 4
 use_wandb: False
 use_rich: True
 
