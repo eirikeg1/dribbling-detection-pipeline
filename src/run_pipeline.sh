@@ -122,18 +122,6 @@ if [ "$DRIBLE_DETECTION" = true ]; then
     log+="Dribble detection completed.\n"
 fi
 
-# Step 5: Clean up
-if [ "$delete_all_data" = true ]; then
-    echo "Cleaning up temporary files and data..."
-    mkdir -p "$OUTPUT_DIR/game-state-configs"
-    mv "$OUTPUT_DIR/game-state-output/configs" "$OUTPUT_DIR/game-state-configs" 
-
-    rm -rf "$tmp_file_dir" || true
-    rm -rf "$OUTPUT_DIR/game-state-output" || true
-    rm -rf "$OUTPUT_DIR/formatted-predictions" || true
-    rm -rf "$OUTPUT_DIR/train" || true
-fi
-
 end_time=$SECONDS
 elapsed_time=$((end_time - start_time))
 elapsed_hours=$((elapsed_time / 3600))
@@ -143,3 +131,16 @@ echo "Pipeline completed successfully in ${elapsed_hours}h:${elapsed_minutes}m:$
 log+="Pipeline completed successfully in ${elapsed_hours}h:${elapsed_minutes}m:${elapsed_seconds}s!\n"
 
 echo "$log" >> "$OUTPUT_DIR/pipeline-log.txt"
+
+# Step 5: Clean up
+if [ "$delete_all_data" = true ]; then
+    echo "Cleaning up temporary files and data..."
+    
+    mkdir -p "$OUTPUT_DIR/game-state-configs"  
+
+    # Check and remove directories if they exist
+    [ -d "$tmp_file_dir" ] && rm -rf "$tmp_file_dir"
+    [ -d "$OUTPUT_DIR/game-state-output" ] && rm -rf "$OUTPUT_DIR/game-state-output"
+    [ -d "$OUTPUT_DIR/formatted-predictions" ] && rm -rf "$OUTPUT_DIR/formatted-predictions"
+    [ -d "$OUTPUT_DIR/train" ] && rm -rf "$OUTPUT_DIR/train"
+fi
