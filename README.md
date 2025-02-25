@@ -12,7 +12,7 @@
 ## Installation
 
 ### 1. Clone repository
-This includes this repository, as well as the two dependancy repositories:
+This includes this repository, as well as the two dependency repositories:
 ```bash
     https://github.com/eirikeg1/dribbling-detection-pipeline.git
     cd dribbling-detection-pipeline
