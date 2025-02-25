@@ -55,7 +55,11 @@ def extract_frames(video_path, output_folder, frame_interval=1):
         '-vsync', '0',
         os.path.join(output_folder, '%06d.jpg')
     ]
-    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    
+    try:
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=10)
+    except:
+        print(f"[WARN] Could not extract frames from {video_path}")
 
 def get_frame_count(folder_path):
     """
