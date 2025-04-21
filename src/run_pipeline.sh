@@ -88,7 +88,7 @@ fi
 if [ "$GAME_STATE_PIPELINE" = true ]; then
     # Step 4.1: Update configuration files using update_configs.py
     echo "Updating configuration files using update_configs.py..."
-    python3 src/update_configs.py \
+    python src/update_configs.py \
         --object-detection-config "object-detection-config.yaml" \
         --yolo_player_model "$YOLO_PLAYER_MODEL" \
         --yolo_ball_model "$YOLO_BALL_MODEL" \
@@ -96,9 +96,10 @@ if [ "$GAME_STATE_PIPELINE" = true ]; then
         --pnl_sv_lines_model "$PNL_LINES_MODEL"
     echo "Configuration update completed."
 
+    LINE_PROFILE=1
     # 4.2 Run object detection, tracking, homography transformation etc.
     echo "Step 4: Running game state pipeline..."
-    python -m tracklab.main -cn soccernet
+    kernprof -l -v dependencies/tracklab/tracklab/main.py -cn soccernet
     echo "Game state pipeline completed."
 
     # 4.3 Reformat the predictions to standard SoccerNet format
