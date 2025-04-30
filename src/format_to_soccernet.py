@@ -60,6 +60,20 @@ def extract_frames(video_path, output_folder, frame_interval=1):
         subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=10)
     except:
         print(f"[WARN] Could not extract frames from {video_path}")
+        
+def copy_framestep_frames(src_folder, dest_folder, frame_interval=1):
+    """
+    Copy every `frame_interval`‑th JPG from *src_folder* to *dest_folder*,
+    renumbering sequentially (000001.jpg …). Uses shutil.copy2 to keep meta.
+    """
+    os.makedirs(dest_folder, exist_ok=True)
+
+    frames = sorted(glob.glob(os.path.join(src_folder, '*.jpg')))
+    picked = frames[::frame_interval] if frame_interval > 0 else frames
+
+    for idx, src in enumerate(picked, start=1):
+        shutil.copy2(src, os.path.join(dest_folder, f'{idx:06d}.jpg'))
+
 
 def get_frame_count(folder_path):
     """
@@ -165,8 +179,11 @@ def main():
     timestamp = start_dt.strftime("%Y-%m-%d_%H-%M-%S")
     run_folder = os.path.join(output_dir, f"run_{timestamp}")
     train_dir = os.path.join(run_folder, "train")
-    os.makedirs(train_dir, exist_ok=True)
+    all_frames_root = os.path.join(run_folder, "all_frames")
 
+    os.makedirs(train_dir, exist_ok=True)
+    os.makedirs(all_frames_root, exist_ok=True)
+    
     # Create a processed folder for this run
     if args.move_processed_videos:
         processed_run_folder = os.path.join("processed", f"run_{timestamp}")
@@ -180,24 +197,32 @@ def main():
     for file_name in sorted(os.listdir(input_dir)):
         if file_name.lower().endswith(('.mp4', '.webm')):
             # Create subfolder and img1 folder for frames
-            video_subfolder_name = os.path.splitext(file_name)[0].lower()
+            video_subfolder_name = os.path.splitext(file_name)[0].lower().replace(" ", "-")
             video_dir = os.path.join(train_dir, video_subfolder_name)
+            
+            all_frames_dir = os.path.join(
+                all_frames_root, video_subfolder_name, "img1" # mirror <train>/<video>/img1
+            )
+            os.makedirs(all_frames_dir, exist_ok=True)   
             img_dir = os.path.join(video_dir, "img1")
 
             os.makedirs(video_dir, exist_ok=True)
             os.makedirs(img_dir, exist_ok=True)
-
+            
             video_path = os.path.join(input_dir, file_name)
-            base_name = os.path.splitext(file_name)[0]
+            base_name  = os.path.splitext(file_name)[0]
             base_name_sanitized = base_name.replace(' ', '-').lower()
 
-            # 1) Get the actual FPS from the video
+            # 1) FPS
             fps = get_video_fps(video_path)
 
-            # 2) Extract frames using the provided frame_interval
-            extract_frames(video_path, img_dir, frame_interval=frame_interval)
-            
-            # 3) Count the frames
+            # 2) Extract **all** frames first
+            extract_frames(video_path, all_frames_dir, frame_interval=1)
+
+            # 3) Copy only every Nth frame into img1
+            copy_framestep_frames(all_frames_dir, img_dir, frame_interval)
+
+            # 4) Count frames that actually landed in img1
             total_frames = get_frame_count(img_dir)
 
             # 4) Create Labels-GameState.json
@@ -229,6 +254,8 @@ def main():
                 print(f"  - Frames extracted to: {img_dir}")
                 print(f"  - Total frames extracted: {total_frames}")
                 print(f"  - {json_path} created.")
+                print(f"  - All frames: {get_frame_count(all_frames_dir)}")
+                print(f"  - Copied (step {frame_interval}): {total_frames}")
                 
                 if args.move_processed_videos:
                     print(f"  - Moved video to: {processed_run_folder}\n")

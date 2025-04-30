@@ -7,7 +7,7 @@ PNL_CALIB_CONFIG = "dependencies/sn-gamestate/sn_gamestate/configs/modules/pitch
 YOLO_MODEL_CONFIG = "dependencies/tracklab/tracklab/configs/modules/bbox_detector/yolo11.yaml"
 
 
-def update_yaml_file(file_path: str, replacements: dict) -> None:
+def update_yaml_file(file_path, replacements):
     """
     Reads a YAML file, replaces lines based on keys in the replacements dict,
     and writes the updated content back to the file.

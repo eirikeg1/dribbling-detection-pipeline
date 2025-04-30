@@ -14,6 +14,23 @@ delete_all_data=true # Whether to keep all intermediate data or not, includes da
 
 log=""
 
+
+# name: label for this timer
+# start: value of $SECONDS when timer began
+log_time() {
+  local name="$1"
+  local start="$2"
+  local end=$SECONDS
+  local elapsed=$(( SECONDS - start ))
+  local elapsed=$((end - start))
+  local h=$(( elapsed / 3600 ))
+  local m=$((( elapsed % 3600 ) / 60 ))
+  local s=$(( elapsed % 60 ))
+  local msg="${name} completed in ${h}h:${m}m:${s}s!"
+  echo "$msg"
+  log+="${msg}"$'\n'
+}
+
 # Parse input arguments
 while getopts "c:i:t:f:k" flag; do
     case "${flag}" in
@@ -51,27 +68,29 @@ fi
 # Step 1: Split the video
 if [ "$SPLIT_VIDEO" = true ]; then
     echo "Step 1: Splitting the video '$input_video' into shorter video clips..."
+    step_time=$SECONDS
     bash src/split_video_script.sh -i "$input_video" -o "$SPLIT_OUTPUT_DIR"
     if [ $? -ne 0 ]; then
         echo "Error: Video splitting failed."
         exit 1
     fi
-    echo "Video splitting completed."
-    log+="Video splitting completed.\n"
+
+    log_time "Video splitting" $step_time
 fi
 
 # Step 2: Remove video clips without enough detections, or too big bounding boxes
 if [ "$FILTER_VIDEO_CLIPS" = true ]; then
     echo "Step 2: Filtering video clips..."
+    step_time=$SECONDS
     python3 src/remove_unwanted_scenes.py --video_dir "$SPLIT_OUTPUT_DIR" --model "$MODEL_DIR/$YOLO_PLAYER_MODEL"
 
-    echo "Filtering video clips completed."
-    log+="Filtering video clips completed.\n"
+    log_time "Filtering video clips" $step_time
 fi
 
 # Step 3: Restructure data to SoccerNet format
 if [ "$FORMAT_VIDEO" = true ]; then
     echo "Step 3: Restructuring data to SoccerNet format..."
+    step_time=$SECONDS
     python3 src/format_to_soccernet.py \
         -i "$SPLIT_OUTPUT_DIR" \
         -o "$OUTPUT_DIR" \
@@ -80,14 +99,14 @@ if [ "$FORMAT_VIDEO" = true ]; then
         --frame_interval "$frame_interval" \
         --delete_processed_videos "$delete_all_data"
 
-    echo "Restructuring data to SoccerNet format completed."
-    log+="Restructuring data to SoccerNet format completed.\n"
+    log_time "Restructuring data" $step_time
 fi
 
 # Step 4: Game state pipeline
 if [ "$GAME_STATE_PIPELINE" = true ]; then
     # Step 4.1: Update configuration files using update_configs.py
     echo "Updating configuration files using update_configs.py..."
+    step_time=$SECONDS
     python3 src/update_configs.py \
         --object-detection-config "object-detection-config.yaml" \
         --yolo_player_model "$YOLO_PLAYER_MODEL" \
@@ -96,41 +115,57 @@ if [ "$GAME_STATE_PIPELINE" = true ]; then
         --pnl_sv_lines_model "$PNL_LINES_MODEL"
     echo "Configuration update completed."
 
+    log_time "Configuration update" $step_time
+
+    step_time=$SECONDS
+
     # 4.2 Run object detection, tracking, homography transformation etc.
     echo "Step 4: Running game state pipeline..."
     python -m tracklab.main -cn soccernet
     echo "Game state pipeline completed."
+
+    log_time "Game state pipeline" $step_time
 
     # 4.3 Reformat the predictions to standard SoccerNet format
     echo "Reformatting predictions to SoccerNetGSR input format..."
     data_dir="$(cat "${tmp_file_dir}/data_dir.txt")"  # data_dir was written to file in step 2
     python src/format_predictions_to_annotations.py --data_dir "$data_dir"
 
-    # 4.4 Interpolate missing annotations
+    step_time=$SECONDS
+    # 4.4 Restore skipped frames and reindex (from frame_interval variable)
+    python3 src/restore_frames_and_reindex.py \
+        --data_dir   "$data_dir" \
+        --all_frames "$data_dir/all_frames" \
+        --frame_interval "$frame_interval"
+    log_time "Reformatting predictions" $step_time
+
+    step_time=$SECONDS
+    # 4.5 Interpolate missing annotations
     echo "Interpolating annotations"
     python src/interpolate_annotations.py --data_dir "$data_dir"
 
-    echo "Object detection pipeline completed."
-    log+="Object detection pipeline completed.\n"
+    log_time "Interpolating annotations" $step_time
+
 fi
 
 # Step 5: Dribble detection (future implementation)
 if [ "$DRIBLE_DETECTION" = true ]; then
+    step_time=$SECONDS
     echo "Step 4: Running dribble detection..."
     # TODO: add dribble detection here
-    echo "Dribble detection completed."
-    log+="Dribble detection completed.\n"
+    
+    log_time "Dribble detection" $step_time
 fi
 
-end_time=$SECONDS
-elapsed_time=$((end_time - start_time))
-elapsed_hours=$((elapsed_time / 3600))
-elapsed_minutes=$(((elapsed_time % 3600) / 60))
-elapsed_seconds=$((elapsed_time % 60))
-echo "Pipeline completed successfully in ${elapsed_hours}h:${elapsed_minutes}m:${elapsed_seconds}s!"
-log+="Pipeline completed successfully in ${elapsed_hours}h:${elapsed_minutes}m:${elapsed_seconds}s!\n"
+log_time "Pipeline" $start_time
 
 echo "$log" >> "$OUTPUT_DIR/pipeline-log.txt"
+
+# now write the full log to the path specified in data_dir.txt
+output_path=$(cat "$tmp_file_dir/data_dir.txt")
+# dump the log
+
+echo "$log" > "$output_path/pipeline-log.txt"
 
 # # Step 5: Clean up
 # if [ "$delete_all_data" = true ]; then
