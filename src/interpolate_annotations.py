@@ -20,8 +20,8 @@ import re
 import shutil  # for copying files
 
 # Maximum gap of frames to fill
-MAX_GAP_FRAMES = 10  # only fill in missing frames if gap <= MAX_GAP_FRAMES
-MAX_GAP_FRAMES_BALL = 35
+MAX_GAP_FRAMES = 8  # only fill in missing frames if gap <= MAX_GAP_FRAMES
+MAX_GAP_FRAMES_BALL = 50
 
 def linear_interpolate(val1, val2, alpha):
     """Perform simple linear interpolation."""
