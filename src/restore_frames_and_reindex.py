@@ -16,7 +16,7 @@ import json
 import shutil
 from pathlib import Path
 
-# ---------- small helpers ----------
+# small helpers
 
 def padding(img_dir: Path) -> int:
     """Guess zero-padding from the first jpg in a folder (default 6)."""
@@ -86,9 +86,7 @@ def process_video(
 
     pad = padding(img_full)
 
-    # ------------------------------------------------------------------
     # 1. rename the sparse frames so their index == original frame index
-    # ------------------------------------------------------------------
     sparse_frames = find_frames(img_sparse)
     id_map = {}
     # first rename to temp names to avoid clashes
@@ -102,9 +100,7 @@ def process_video(
         src.rename(dst)
         id_map[i_sparse] = original
 
-    # ------------------------------------------------------------------
     # 2. copy every missing frame from the full set
-    # ------------------------------------------------------------------
     total_frames = max(find_frames(img_full))
     have = set(find_frames(img_sparse))
     need = [i for i in range(1, total_frames + 1) if i not in have]
@@ -118,9 +114,7 @@ def process_video(
             img_sparse / f"{i:0{pad}d}.jpg",
         )
 
-    # ------------------------------------------------------------------
     # 3. update JSON
-    # ------------------------------------------------------------------
     relabel_json(fp_video / "Labels-GameState.json", id_map, total_frames)
 
     print(f"[OK] {fp_video.name}: +{len(need)} frames, "
