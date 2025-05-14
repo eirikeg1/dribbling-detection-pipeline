@@ -1,4 +1,4 @@
-# Dribling Detection Pipeline
+# Dribbling and Tackle Detection Pipeline
 
 ## Pipeline Steps
 
