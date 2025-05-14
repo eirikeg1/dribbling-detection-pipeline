@@ -14,11 +14,11 @@ import subprocess
 from ultralytics import YOLO
 
 # Configuration constants
-CONF_THRESHOLD = 0.6        # Minimum confidence for a detection
-MIN_PLAYERS = 4             # Minimum number of players required
+CONF_THRESHOLD = 0.5        # Minimum confidence for a detection
+MIN_PLAYERS = 2             # Minimum number of players required
 MAX_BBOX_HEIGHT_RATIO = 1/4 # Maximum allowed fraction of the frame height for any player's bbox
 
-CHUNK_LENGTH = 45  # max length of each video chunk (in seconds)
+CHUNK_LENGTH = 12  # max length of each video chunk (in seconds)
 OVERLAP = 2        # overlap between consecutive chunks (in seconds)
 
 def get_middle_frame(video_path):
